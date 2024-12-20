@@ -1,0 +1,69 @@
+#App {
+    position: relative;
+    z-index: 0;
+    width: 100%;
+    min-width: 480px;
+    max-width: 1920px;
+    aspect-ratio: 16/9;
+    overflow: hidden;
+
+    margin: 2em auto;
+    background-color: #FFF;
+    border: 1px solid #333;
+
+    canvas {
+        position: relative;
+        z-index: 1;
+    }
+
+    a {
+        position: absolute;
+        bottom: 1em;
+        right: 0;
+        z-index: 2;
+        padding: 0.5em;
+
+        background-color: #FFF;
+        border-radius: 25% 0 0 25%;
+        border: 1px solid #FFF;
+        box-shadow: 0 0 5px 5px rgba(0, 0, 0, 0.25);
+
+        color: #000;
+        font-weight: bold;
+        font-size: 100%;
+        width: 2em;
+        text-decoration: none;
+        text-align: center;
+
+        transition: width 0.2s linear;
+
+        animation-duration: 2s;
+        animation-name: pulse;
+        animation-iteration-count: infinite;
+        animation-direction: alternate;
+        animation-timing-function: cubic-bezier(0.6, -0.28, 0.735, 0.045);
+
+        &:hover {
+            background-size: cover;
+            background-position: 50% 50%;
+            background: rgb(131, 58, 180);
+            background: radial-gradient(circle, rgba(131, 58, 180, 1) 0%, rgba(253, 29, 29, 1) 50%, rgba(252, 176, 69, 1) 100%);
+            width: 3em;
+        }
+    }
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 15px 15px rgba(0, 255, 42, 0.1);
+    }
+
+    50% {
+        box-shadow: 0 0 5px 5px rgba(255, 153, 0, 0.25);
+    }
+
+    100% {
+        box-shadow: 0 0 15px 15px rgba(0, 162, 255, 0.1);
+    }
+
+}

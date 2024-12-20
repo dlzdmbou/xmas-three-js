@@ -1,16 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xmass Three.js</title>
+    <title>🎁.js</title>
     <link rel="stylesheet" href="/css/style.css" />
+    <link rel="stylesheet" href="/css/app.css" />
 </head>
+
 <body>
-    <a href="/about.html">&lt;&Backslash;&gt;</a>
 
-    <div id="App"></div>
+    <!-- 🔥 this is where the three js renderer lives 🔥 -->
+    <div id="App">
+        <a id="AppCode" href="/about.html" title="Source code, with festive wrappings">🎁</a>
+    </div>
 
-    <script type="module" src="main.js"></script>
+    <!-- 
+    This is the main script module.
+    🔥 Three initialization takes place there, and all other JS gets imported into 1 module
+    ⚡ vite  will make quick work of our scripts,.. har har har.
+    🎁 Vite is (ab)used as an Elf and it gets to giftwrap our code.
+    -->
+    <script type="module" src="/index.js"></script>
 </body>
+
 </html>
