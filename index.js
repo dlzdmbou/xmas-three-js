@@ -1,25 +1,23 @@
 /**
  * We start by importing the Three js lib for everything 3d and rendering on our GPU.
+ * 
  * After that we import other modules we need for our project.
+ * 
+ * Vite (dev):
  * We don't have to worry about all these different files here, that's why we use Vite!
- * Vite will bundle our code when we build our project.
+ * Vite will bundle our code when we build our project. But you might have to double check 
+ * if you're using the right paths. So don't forget to run npm build to see if the 
+ * references are correctly picked up on by Vite.
  */
 import * as THREE from 'three';
 import { OrbitControls } from './node_modules/three/examples/jsm/controls/OrbitControls.js';
 import Stats from './node_modules/three/examples/jsm/libs/stats.module.js';
 
 // Custom classes
-import ExplosionEmitter from './src/ParticleSystems/ExplosionEmitter';
-import SnowEmitter from './src/ParticleSystems/SnowEmitter';
+import ModelLoader from './src/utils/ModelLoader.js';
 
 // Textures
 import imageTexture from './public/images/image.png';
-
-// Models
-import { GLTFLoader } from './node_modules/three/examples/jsm/loaders/GLTFLoader';
-import { FBXLoader } from './node_modules/three/examples/jsm/loaders/FBXLoader';
-import { VertexNormalsHelper } from './node_modules/three/examples/jsm/helpers/VertexNormalsHelper.js';
-//import environmentModel from './src/assets/models/xmass-env.glb';
 
 // 🔥 Bind the DOM element for renderer
 const rendererContainer = document.getElementById("App");
@@ -33,13 +31,13 @@ const renderer = new THREE.WebGLRenderer();
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setSize(rendererContainer.clientWidth, rendererContainer.clientHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
 rendererContainer.appendChild(renderer.domElement);
 
 // Setup the scene, this is the 3d space
 const scene = new THREE.Scene();
 
 // Setup the camera, this is what looks at the scene
-//const camera = new THREE.PerspectiveCamera(45, rendererContainer.clientWidth, rendererContainer.clientHeight, 0.1, 1000);
 const frustumSize = 500;
 const aspect = rendererContainer.clientWidth / rendererContainer.clientHeight;
 const camera = new THREE.OrthographicCamera(frustumSize * aspect / - 2, frustumSize * aspect / 2, frustumSize / 2, frustumSize / - 2, 1, 1000);
@@ -58,6 +56,11 @@ controls.maxZoom = 10;
 controls.zoomSpeed = 2;
 // controls.autoRotate = false;
 controls.rotateSpeed = 0.3;
+controls.mouseButtons = {
+    LEFT: null,
+    MIDDLE: THREE.MOUSE.PAN,
+    RIGHT: THREE.MOUSE.ROTATE
+};
 controls.update();
 
 // Use THREE.Clock for frame-rate independent updates
@@ -67,7 +70,7 @@ const clock = new THREE.Clock();
 const stats = new Stats();
 rendererContainer.appendChild(stats.dom);
 
-// Visualization
+// Visualization (default cube)
 // const cubeGeometry = new THREE.BoxGeometry(10, 10, 10);
 // const cubeMaterial = new THREE.MeshStandardMaterial({ color: 0xff5533 });
 // const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
@@ -78,7 +81,7 @@ rendererContainer.appendChild(stats.dom);
 
 // Lights
 const hemiLight = new THREE.HemisphereLight(0xffffff, 0x8d8d8d, 0.8);
-hemiLight.position.set(0, 20, 0);
+hemiLight.position.set(0, 10, 0);
 scene.add(hemiLight);
 
 const pointLightBack = new THREE.PointLight(0x98BCFF, 120, 100, .85);
@@ -103,48 +106,34 @@ scene.add(pointLightFront);
 // const pointLightHelperFront = new THREE.PointLightHelper(pointLightFront, 1);
 // scene.add(pointLightHelperFront);
 
-const loader = new FBXLoader();
-let environment;
+// Setup 3d model loader (FBX)
+const modelLoader = new ModelLoader(scene);
+// Load the environment model (and add it into the scene)
+await modelLoader.loadModel({ path: './3d/environment.fbx', useShadows: true });
 
-loader.load(
-    // Path to the FBX file
-    './3d/environment.fbx',
+// Create mole object[s]
+const moles = new THREE.Group();
+const mole = await modelLoader.loadModel({ path: './3d/mole.fbx', useShadows: true, isAnimated: true, position: { x: 10, y: 10, z: -10 } });
+moles.add(mole);
+scene.add(moles);
 
-    // Called when the model is successfully loaded
-    function (object) {
-        object.scale.set(0.1, 0.1, 0.1);
-        object.position.set(0, 0, 0);
-        object.castShadow = true;
+mole.traverse((node) => {
+    if (node.isMesh) {
+        // Check if the morph target dictionary exists and contains the shape key "hit"
+        const hitIndex = node.morphTargetDictionary["hit"];
 
+        if (hitIndex !== undefined) {
+            console.log(`Found shape key "hit" at index ${hitIndex}`);
 
-        object.traverse((node) => {
-            if (node.isMesh) {
-                node.material = new THREE.MeshStandardMaterial({ vertexColors: true });
-                node.castShadow = true;
-                node.receiveShadow = true;
-            }
-        });
+            // Set the influence of the "hit" shape key to 1 (full influence)
+            node.morphTargetInfluences[hitIndex] = 1;
 
-        // Add the loaded object to the scene
-        environment = object;
-        scene.add(environment);
-
-        console.log('FBX model loaded:', object);
-    },
-
-    // Called while loading is in progress
-    function (xhr) {
-        console.log((xhr.loaded / xhr.total * 100) + '% loaded');
-    },
-
-    // Called when loading has errors
-    function (error) {
-        console.error('An error occurred while loading the FBX model:', error);
+            console.log('Morph target influence set to 1 for "hit"');
+        } else {
+            console.warn('No "hit" shape key found in the model.');
+        }
     }
-);
-console.log(environment)
-
-
+});
 
 // 🔥 Start the renderer animation loop
 renderer.setAnimationLoop(animate);
@@ -157,11 +146,12 @@ function animate() {
     const deltaTime = clock.getDelta();
 
     controls.update();
+    camera.updateMatrixWorld();
 
-    if (environment) {
-        //environment.rotateY(0.001);
-        //camera.lookAt(environment.position);
-    }
+    // Update all mixers (for all animated objects)
+    // if (mole.mixer) {
+    //     mole.mixer.update(deltaTime);  // Adjust delta time as needed
+    // }
 
     //camera.position.y = Math.sin(deltaTime);
     //camera.position.y = cameraStartY + 4 * Math.sin(1 * clock.elapsedTime);
@@ -179,16 +169,111 @@ function onResize(entries) {
     entries.forEach(entry => {
         // Ensure we're working with the correct container
         if (entry.target === rendererContainer) {
-            // Update the renderer size based on the container's size
+            // Update renderer size and camera aspect ratio
             renderer.setSize(rendererContainer.clientWidth, rendererContainer.clientHeight);
-
-            // Update the camera's aspect ratio and projection matrix
             camera.aspect = rendererContainer.clientWidth / rendererContainer.clientHeight;
             camera.updateProjectionMatrix();
         }
     });
 }
 
-window.addEventListener('click', () => {
 
-});
+// Create a Raycaster and a Vector2 to store mouse coordinates
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+let rayLine;
+let INTERSECTED;
+
+// Handle mouse click events
+window.addEventListener('click', onClick, false);
+
+// The onClick event handler
+function onClick(event) {
+    camera.matrixWorldNeedsUpdate
+    // Normalize mouse coordinates to [-1, 1] range (for Raycaster)
+    const rect = rendererContainer.getBoundingClientRect(); // Get the bounds of the container
+    mouse.x = (event.clientX - rect.left) / rect.width * 2 - 1;  // Normalize X
+    mouse.y = - (event.clientY - rect.top) / rect.height * 2 + 1; // Normalize Y
+
+    raycaster.setFromCamera(mouse, camera);
+
+    const intersects = raycaster.intersectObjects(scene.children, false);
+    if (intersects.length > 0) {
+
+        if (INTERSECTED != intersects[0].object) {
+
+            if (INTERSECTED) INTERSECTED.material.emissive.setHex(INTERSECTED.currentHex);
+
+            INTERSECTED = intersects[0].object;
+            INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
+            INTERSECTED.material.emissive.setHex(0xff0000);
+
+        }
+
+    } else {
+
+        if (INTERSECTED) INTERSECTED.material.emissive.setHex(INTERSECTED.currentHex);
+
+        INTERSECTED = null;
+
+    }
+
+    // Update the ray line for visualization
+    if (!rayLine) {
+        createRayLine();
+    }
+    updateRayLine(raycaster.ray);
+
+    // Check for intersections with all objects in the scene
+    checkForMoleIntersection();
+}
+
+// Function to check for intersection with the mole
+function checkForMoleIntersection() {
+    // Cast the ray to check against all objects in the scene
+    const intersects = raycaster.intersectObjects(moles.children);
+
+    if (intersects.length > 0) {
+        // Log which object was clicked
+        console.log('Object clicked:', intersects[0].object);
+        // Handle the object click
+        handleObjectClick(intersects[0].object);
+    } else {
+        console.log('No intersection with any object');
+    }
+}
+
+// Function to handle what happens when the mole is clicked
+function handleMoleClick() {
+    console.log('Mole has been hit!');
+    // Trigger shape key animation or other logic here
+}
+
+// Handle clicks on other objects
+function handleObjectClick(clickedObject) {
+    if (clickedObject === mole) {
+        console.log('Mole clicked!');
+        // You can trigger animations or other actions on the mole
+        handleMoleClick();
+    } else {
+        console.log('Another object clicked:', clickedObject);
+    }
+}
+
+// Function to create the ray line for visualization
+function createRayLine() {
+    // Create a geometry for the ray (1 line segment)
+    const material = new THREE.LineBasicMaterial({ color: 0xff0000 }); // Red color for the ray
+    const geometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1)]);
+
+    // Create the line and add it to the scene
+    rayLine = new THREE.Line(geometry, material);
+    scene.add(rayLine);
+}
+
+// Function to update the ray line
+function updateRayLine(ray) {
+    // Update the ray line to match the current ray's origin and direction
+    const endPoint = ray.origin.clone().add(ray.direction.clone().multiplyScalar(200)); // 100 units long
+    rayLine.geometry.setFromPoints([ray.origin, endPoint]); // Update line points
+}
