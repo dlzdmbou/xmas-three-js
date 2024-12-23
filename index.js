@@ -21,6 +21,8 @@ import imageTexture from './public/images/image.png';
 
 // 🔥 Bind the DOM element for renderer
 const rendererContainer = document.getElementById("App");
+// Handle mouse click events
+rendererContainer.addEventListener('click', onClick, false);
 
 // Use ResizeObserver to monitor container size changes
 const rendererResizeObserver = new ResizeObserver(onResize);
@@ -34,27 +36,27 @@ renderer.setSize(rendererContainer.clientWidth, rendererContainer.clientHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 rendererContainer.appendChild(renderer.domElement);
 
-// Setup the scene, this is the 3d space
+// Setup the scene, this is the 3d space where everything will live.
 const scene = new THREE.Scene();
 
-// Setup the camera, this is what looks at the scene
+// Setup the camera, this is what we use to look at the scene, our eyes.
 const frustumSize = 500;
 const aspect = rendererContainer.clientWidth / rendererContainer.clientHeight;
 const camera = new THREE.OrthographicCamera(frustumSize * aspect / - 2, frustumSize * aspect / 2, frustumSize / 2, frustumSize / - 2, 1, 1000);
 camera.position.set(- 33, 33, - 66);
 
-// Make it so we can control the camera and orbit around our scene 0,0,0
+// Make it so we can control the camera and orbit around a target
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target = new THREE.Vector3(0, 10, 0);
-controls.enablePan = true;
+controls.enablePan = false;
 controls.enableDamping = true;
-//controls.maxPolarAngle = (Math.PI / 2) + 0.1;
-//controls.minPolarAngle = 0.8;
-// controls.enabled = false;
+controls.maxPolarAngle = (Math.PI / 2) + 0.1;
+controls.minPolarAngle = 0.8;
+controls.enabled = true;
 controls.minZoom = 4;
 controls.maxZoom = 10;
 controls.zoomSpeed = 2;
-// controls.autoRotate = false;
+controls.autoRotate = false;
 controls.rotateSpeed = 0.3;
 controls.mouseButtons = {
     LEFT: null,
@@ -63,6 +65,11 @@ controls.mouseButtons = {
 };
 controls.update();
 
+// Create a Raycaster and a Vector2 to store mouse coordinates
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+let rayLine;
+
 // Use THREE.Clock for frame-rate independent updates
 const clock = new THREE.Clock();
 
@@ -70,17 +77,8 @@ const clock = new THREE.Clock();
 const stats = new Stats();
 rendererContainer.appendChild(stats.dom);
 
-// Visualization (default cube)
-// const cubeGeometry = new THREE.BoxGeometry(10, 10, 10);
-// const cubeMaterial = new THREE.MeshStandardMaterial({ color: 0xff5533 });
-// const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
-// cube.position.set(40, 10, 10)
-// cube.castShadow = true;
-// cube.receiveShadow = true;
-// scene.add(cube);
-
 // Lights
-const hemiLight = new THREE.HemisphereLight(0xffffff, 0x8d8d8d, 0.8);
+const hemiLight = new THREE.HemisphereLight(0xffffff, 0x8d8d8d, .6);
 hemiLight.position.set(0, 10, 0);
 scene.add(hemiLight);
 
@@ -108,14 +106,36 @@ scene.add(pointLightFront);
 
 // Setup 3d model loader (FBX)
 const modelLoader = new ModelLoader(scene);
+// Intersect group for raycast targets.
+const intersectGroup = new THREE.Group();
 // Load the environment model (and add it into the scene)
-await modelLoader.loadModel({ path: './3d/environment.fbx', useShadows: true });
+await modelLoader.loadModel({
+    path: './3d/environment2.fbx',
+    useShadows: true,
+    position: { x: 0, y: 0, z: 0 }
+});
 
-// Create mole object[s]
-const moles = new THREE.Group();
-const mole = await modelLoader.loadModel({ path: './3d/mole.fbx', useShadows: true, isAnimated: true, position: { x: 10, y: 10, z: -10 } });
-moles.add(mole);
-scene.add(moles);
+// Create mole objects for intersectGroup
+
+/*
+positions for 9 moles in this map: (use y -16 to 'hide' moles)
+1: { x: 28, y: 0, z: 1.5 }
+2: { x: 13, y: 0, z: -9 }
+3: { x: -1, y: 0, z: -6 }
+4: { x: -23, y: 0, z: 3 }
+5: { x: 23, y: 0, z: -18 }
+6: { x: 9.5, y: 0, z: -27.5 }
+7: { x: -2.75, y: 0, z: -19.25 }
+8: position: { x: -19, y: 0, z: -23 }
+9: { x: -35, y: 0, z: -14 }
+*/
+
+const mole = await modelLoader.loadModel({
+    path: './3d/mole2.fbx',
+    useShadows: true,
+    isAnimated: true,
+    position: { x:28, y: -3, z: 1.5 }
+});
 
 mole.traverse((node) => {
     if (node.isMesh) {
@@ -126,14 +146,16 @@ mole.traverse((node) => {
             console.log(`Found shape key "hit" at index ${hitIndex}`);
 
             // Set the influence of the "hit" shape key to 1 (full influence)
-            node.morphTargetInfluences[hitIndex] = 1;
-
-            console.log('Morph target influence set to 1 for "hit"');
+            node.morphTargetInfluences[hitIndex] = 0;
         } else {
             console.warn('No "hit" shape key found in the model.');
         }
     }
 });
+
+intersectGroup.add(mole);
+
+scene.add(intersectGroup);
 
 // 🔥 Start the renderer animation loop
 renderer.setAnimationLoop(animate);
@@ -145,18 +167,11 @@ function animate() {
     // Would you look at the time...
     const deltaTime = clock.getDelta();
 
+    // Update all the things, sometimes with time
     controls.update();
     camera.updateMatrixWorld();
 
-    // Update all mixers (for all animated objects)
-    // if (mole.mixer) {
-    //     mole.mixer.update(deltaTime);  // Adjust delta time as needed
-    // }
-
-    //camera.position.y = Math.sin(deltaTime);
-    //camera.position.y = cameraStartY + 4 * Math.sin(1 * clock.elapsedTime);
-
-    // Render the frame with the updated fireworks, boom boom
+    // Render the frame
     renderer.render(scene, camera);
 
     // End measuring and update stats
@@ -177,92 +192,66 @@ function onResize(entries) {
     });
 }
 
-
-// Create a Raycaster and a Vector2 to store mouse coordinates
-const raycaster = new THREE.Raycaster();
-const mouse = new THREE.Vector2();
-let rayLine;
-let INTERSECTED;
-
-// Handle mouse click events
-window.addEventListener('click', onClick, false);
-
 // The onClick event handler
 function onClick(event) {
-    camera.matrixWorldNeedsUpdate
     // Normalize mouse coordinates to [-1, 1] range (for Raycaster)
-    const rect = rendererContainer.getBoundingClientRect(); // Get the bounds of the container
-    mouse.x = (event.clientX - rect.left) / rect.width * 2 - 1;  // Normalize X
-    mouse.y = - (event.clientY - rect.top) / rect.height * 2 + 1; // Normalize Y
-
+    // Set a ray from camera based on normalized coordinates.
+    const rect = rendererContainer.getBoundingClientRect();
+    mouse.x = (event.clientX - rect.left) / rect.width * 2 - 1;
+    mouse.y = - (event.clientY - rect.top) / rect.height * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
 
-    const intersects = raycaster.intersectObjects(scene.children, false);
-    if (intersects.length > 0) {
+    // Check for intersections with all objects in the scene
+    checkIntersection();
+}
 
-        if (INTERSECTED != intersects[0].object) {
+// Function to check for intersection with objects in the scene
+function checkIntersection() {
+    // Cast the ray to check against all objects in the scene
+    const intersects = raycaster.intersectObjects(scene.children);
 
-            if (INTERSECTED) INTERSECTED.material.emissive.setHex(INTERSECTED.currentHex);
-
-            INTERSECTED = intersects[0].object;
-            INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
-            INTERSECTED.material.emissive.setHex(0xff0000);
-
-        }
-
-    } else {
-
-        if (INTERSECTED) INTERSECTED.material.emissive.setHex(INTERSECTED.currentHex);
-
-        INTERSECTED = null;
-
-    }
-
-    // Update the ray line for visualization
+    // Create the raycaster helper line for debug visualization
     if (!rayLine) {
         createRayLine();
     }
-    updateRayLine(raycaster.ray);
-
-    // Check for intersections with all objects in the scene
-    checkForMoleIntersection();
-}
-
-// Function to check for intersection with the mole
-function checkForMoleIntersection() {
-    // Cast the ray to check against all objects in the scene
-    const intersects = raycaster.intersectObjects(moles.children);
 
     if (intersects.length > 0) {
-        // Log which object was clicked
-        console.log('Object clicked:', intersects[0].object);
-        // Handle the object click
-        handleObjectClick(intersects[0].object);
+        if ( groupContains(intersectGroup, intersects[0].object) ) {
+            console.log(`Intersect object found:`, intersects[0].object);
+            handleObjectClick(intersects[0].object);
+        }
+        updateRayLine(raycaster.ray, intersects[0].point);
     } else {
-        console.log('No intersection with any object');
+        console.log('No intersect objects found');
+        updateRayLine(raycaster.ray);
     }
 }
 
-// Function to handle what happens when the mole is clicked
-function handleMoleClick() {
-    console.log('Mole has been hit!');
-    // Trigger shape key animation or other logic here
+function handleObjectClick(object) {
+    object.traverse((node) => {
+        if (node.isMesh) {
+            // Check if the morph target dictionary exists and contains the shape key "hit"
+            const hitIndex = node.morphTargetDictionary["hit"];
+            if (hitIndex !== undefined) {
+                // Set the influence of the "hit" shape key to 1 (0 none, 1 full)
+                node.morphTargetInfluences[hitIndex] = 1;
+            }
+        }
+    });
 }
 
-// Handle clicks on other objects
-function handleObjectClick(clickedObject) {
-    if (clickedObject === mole) {
-        console.log('Mole clicked!');
-        // You can trigger animations or other actions on the mole
-        handleMoleClick();
-    } else {
-        console.log('Another object clicked:', clickedObject);
-    }
+function groupContains(group, object) {
+    let found = false;
+    group.traverse((child) => {
+        if (child === object) {
+            found = true;
+        }
+    });
+    return found;
 }
 
-// Function to create the ray line for visualization
 function createRayLine() {
-    // Create a geometry for the ray (1 line segment)
+    // Create debug visualization
     const material = new THREE.LineBasicMaterial({ color: 0xff0000 }); // Red color for the ray
     const geometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1)]);
 
@@ -272,8 +261,15 @@ function createRayLine() {
 }
 
 // Function to update the ray line
-function updateRayLine(ray) {
-    // Update the ray line to match the current ray's origin and direction
-    const endPoint = ray.origin.clone().add(ray.direction.clone().multiplyScalar(200)); // 100 units long
-    rayLine.geometry.setFromPoints([ray.origin, endPoint]); // Update line points
+function updateRayLine(ray, point) {
+    let endPoint;
+    if (point) {
+        // Ray endpoint is collission point
+        endPoint = point;
+    } else {
+        // Ray endpoint is 200 units
+        endPoint = ray.origin.clone().add(ray.direction.clone().multiplyScalar(200));
+    }
+    // Update line points
+    rayLine.geometry.setFromPoints([ray.origin, endPoint]);
 }

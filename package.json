@@ -1,4 +1,9 @@
 {
+  "author": "Daniël Zegveld",
+  "name": "2024-xmas-ny",
+  "version": "0.0.1",
+  "description": "Christmas Three.js: whac-a-mole for my students",
+  "main": "index.js",
   "scripts": {
     "build": "npx vite build",
     "dev": "npx vite --open",
