@@ -53,6 +53,13 @@
     }
 }
 
+.renderStats {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 9001;
+}
+
 @keyframes pulse {
     0% {
         box-shadow: 0 0 15px 15px rgba(0, 255, 42, 0.1);

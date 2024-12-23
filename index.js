@@ -34,6 +34,7 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setSize(rendererContainer.clientWidth, rendererContainer.clientHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
+renderer.setClearColor(0x111111);
 rendererContainer.appendChild(renderer.domElement);
 
 // Setup the scene, this is the 3d space where everything will live.
@@ -75,6 +76,8 @@ const clock = new THREE.Clock();
 
 // Performance graphs
 const stats = new Stats();
+stats.dom.style = '';
+stats.dom.classList.add('renderStats');
 rendererContainer.appendChild(stats.dom);
 
 // Lights
