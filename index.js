@@ -21,6 +21,7 @@ import imageTexture from './public/images/image.png';
 
 // 🔥 Bind the DOM element for renderer
 const rendererContainer = document.getElementById("App");
+
 // Handle mouse click events
 rendererContainer.addEventListener('click', onClick, false);
 
@@ -28,13 +29,13 @@ rendererContainer.addEventListener('click', onClick, false);
 const rendererResizeObserver = new ResizeObserver(onResize);
 rendererResizeObserver.observe(rendererContainer);
 
-// Setup the renderer, WebGLRenderer is GPU powered
+// Setup the renderer, WebGLRenderer is GPU power
 const renderer = new THREE.WebGLRenderer();
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.setSize(rendererContainer.clientWidth, rendererContainer.clientHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setClearColor(0x111111);
+renderer.setClearColor(0x101010);
 rendererContainer.appendChild(renderer.domElement);
 
 // Setup the scene, this is the 3d space where everything will live.
@@ -46,7 +47,7 @@ const aspect = rendererContainer.clientWidth / rendererContainer.clientHeight;
 const camera = new THREE.OrthographicCamera(frustumSize * aspect / - 2, frustumSize * aspect / 2, frustumSize / 2, frustumSize / - 2, 1, 1000);
 camera.position.set(- 33, 33, - 66);
 
-// Make it so we can control the camera and orbit around a target
+// Setup controls so we can control the camera and orbit around a target
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target = new THREE.Vector3(0, 10, 0);
 controls.enablePan = false;
@@ -66,10 +67,12 @@ controls.mouseButtons = {
 };
 controls.update();
 
-// Create a Raycaster and a Vector2 to store mouse coordinates
+// Create a Raycaster to shoot lazers through space, and maybe hit things
 const raycaster = new THREE.Raycaster();
+// Create a Vector2 to store mouse coordinates
 const mouse = new THREE.Vector2();
-let rayLine;
+// Create a rayLineHelper to visualize the raycaster line
+let rayLineHelper;
 
 // Use THREE.Clock for frame-rate independent updates
 const clock = new THREE.Clock();
@@ -214,7 +217,7 @@ function checkIntersection() {
     const intersects = raycaster.intersectObjects(scene.children);
 
     // Create the raycaster helper line for debug visualization
-    if (!rayLine) {
+    if (!rayLineHelper) {
         createRayLine();
     }
 
@@ -259,8 +262,8 @@ function createRayLine() {
     const geometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1)]);
 
     // Create the line and add it to the scene
-    rayLine = new THREE.Line(geometry, material);
-    scene.add(rayLine);
+    rayLineHelper = new THREE.Line(geometry, material);
+    scene.add(rayLineHelper);
 }
 
 // Function to update the ray line
@@ -274,5 +277,5 @@ function updateRayLine(ray, point) {
         endPoint = ray.origin.clone().add(ray.direction.clone().multiplyScalar(200));
     }
     // Update line points
-    rayLine.geometry.setFromPoints([ray.origin, endPoint]);
+    rayLineHelper.geometry.setFromPoints([ray.origin, endPoint]);
 }
