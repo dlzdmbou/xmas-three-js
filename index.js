@@ -7,12 +7,13 @@
  * We don't have to worry about all these different files here, that's why we use Vite!
  * Vite will bundle our code when we build our project. But you might have to double check 
  * if you're using the right paths. So don't forget to run npm build to see if the 
- * references are correctly picked up on by Vite.
+ * references are correctly picked up on by Vite, preferably before you commit your changes...
  */
 import * as THREE from 'three';
 import Stats from './node_modules/three/examples/jsm/libs/stats.module.js';
 
 // Custom classes
+import InputHandler from './src/components/InputHandler.js';
 import ModelLoader from './src/utils/ModelLoader.js';
 import Mole from './src/components/Mole.js';
 import SceneManager from './src/components/SceneManager.js';
@@ -55,33 +56,22 @@ stats.dom.style = '';
 stats.dom.classList.add('renderStats');
 rendererContainer.appendChild(stats.dom);
 
+//@TODO w.i.p input refactoring
+//const inputHandler = new InputHandler(rendererContainer, camera);
+
 // Setup 3d model loader (FBX)
 const modelLoader = new ModelLoader(scene);
 // Intersect group for raycast targets.
 const intersectGroup = new THREE.Group();
 
 // Load the environment model (and add it into the scene)
-const environment = await modelLoader.loadModel({
+await modelLoader.loadModel({
     path: './3d/environment2.fbx',
-    useShadows: true,
-    position: { x: 0, y: 0, z: 0 }
+    useShadows: true
 });
 
-// Create mole objects for intersectGroup
-
-/*
-positions for 9 moles in this map: (use y -16 to 'hide' moles)
-1: { x: 28, y: 0, z: 1.5 }
-2: { x: 13, y: 0, z: -9 }
-3: { x: -1, y: 0, z: -6 }
-4: { x: -23, y: 0, z: 3 }
-5: { x: 23, y: 0, z: -18 }
-6: { x: 9.5, y: 0, z: -27.5 }
-7: { x: -2.75, y: 0, z: -19.25 }
-8: { x: -19, y: 0, z: -23 }
-9: { x: -35, y: 0, z: -14 }
-*/
-
+// Create mole objects for intersectGroup 
+// Model reference: left to righ 2 rows [1,2,3,4] [5,6,7,8,9]
 const molePositions = [
     { x: 28, y: 0, z: 1.5 },
     { x: 13, y: 0, z: -9 },
@@ -94,17 +84,13 @@ const molePositions = [
     { x: -35, y: 0, z: -14 }
 ];
 
-const moles = [];
 for (const position of molePositions) {
     const mole = new Mole(scene, { path: './3d/mole2.fbx', position });
     await mole.load();
-    moles.push(mole);
     intersectGroup.add(mole);
 }
 
 scene.add(intersectGroup);
-
-
 
 // 🔥 Start the renderer animation loop
 renderer.setAnimationLoop(animate);
@@ -126,7 +112,6 @@ function animate() {
     // End measuring and update stats
     stats.end();
 }
-
 
 // Adjust renderer and camera on container size change
 function onResize(entries) {
