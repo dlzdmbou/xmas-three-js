@@ -15,9 +15,10 @@ import Stats from './node_modules/three/examples/jsm/libs/stats.module.js';
 
 // Custom classes
 import ModelLoader from './src/utils/ModelLoader.js';
+import Mole from './src/components/Mole.js';
 
 // Textures
-import imageTexture from './public/images/image.png';
+// import imageTexture from './public/images/image.png';
 
 // 🔥 Bind the DOM element for renderer
 const rendererContainer = document.getElementById("App");
@@ -69,10 +70,12 @@ controls.update();
 
 // Create a Raycaster to shoot lazers through space, and maybe hit things
 const raycaster = new THREE.Raycaster();
-// Create a Vector2 to store mouse coordinates
-const mouse = new THREE.Vector2();
+
 // Create a rayLineHelper to visualize the raycaster line
 let rayLineHelper;
+
+// Create a Vector2 to store mouse coordinates
+const mouse = new THREE.Vector2();
 
 // Use THREE.Clock for frame-rate independent updates
 const clock = new THREE.Clock();
@@ -115,7 +118,7 @@ const modelLoader = new ModelLoader(scene);
 // Intersect group for raycast targets.
 const intersectGroup = new THREE.Group();
 // Load the environment model (and add it into the scene)
-await modelLoader.loadModel({
+const environment = await modelLoader.loadModel({
     path: './3d/environment2.fbx',
     useShadows: true,
     position: { x: 0, y: 0, z: 0 }
@@ -132,36 +135,58 @@ positions for 9 moles in this map: (use y -16 to 'hide' moles)
 5: { x: 23, y: 0, z: -18 }
 6: { x: 9.5, y: 0, z: -27.5 }
 7: { x: -2.75, y: 0, z: -19.25 }
-8: position: { x: -19, y: 0, z: -23 }
+8: { x: -19, y: 0, z: -23 }
 9: { x: -35, y: 0, z: -14 }
 */
 
-const mole = await modelLoader.loadModel({
-    path: './3d/mole2.fbx',
-    useShadows: true,
-    isAnimated: true,
-    position: { x:28, y: -3, z: 1.5 }
-});
+// const mole = await modelLoader.loadModel({
+//     path: './3d/mole2.fbx',
+//     useShadows: true,
+//     isAnimated: true,
+//     position: { x:28, y: -3, z: 1.5 }
+// });
 
-mole.traverse((node) => {
-    if (node.isMesh) {
-        // Check if the morph target dictionary exists and contains the shape key "hit"
-        const hitIndex = node.morphTargetDictionary["hit"];
+// mole.traverse((node) => {
+//     if (node.isMesh) {
+//         // Check if the morph target dictionary exists and contains the shape key "hit"
+//         const hitIndex = node.morphTargetDictionary["hit"];
 
-        if (hitIndex !== undefined) {
-            console.log(`Found shape key "hit" at index ${hitIndex}`);
+//         if (hitIndex !== undefined) {
+//             console.log(`Found shape key "hit" at index ${hitIndex}`);
 
-            // Set the influence of the "hit" shape key to 1 (full influence)
-            node.morphTargetInfluences[hitIndex] = 0;
-        } else {
-            console.warn('No "hit" shape key found in the model.');
-        }
-    }
-});
+//             // Set the influence of the "hit" shape key to 1 (full influence)
+//             node.morphTargetInfluences[hitIndex] = 0;
+//         } else {
+//             console.warn('No "hit" shape key found in the model.');
+//         }
+//     }
+// });
 
-intersectGroup.add(mole);
+const molePositions = [
+    { x: 28, y: 0, z: 1.5 },
+    { x: 13, y: 0, z: -9 },
+    { x: -1, y: 0, z: -6 },
+    { x: -23, y: 0, z: 3 },
+    { x: 23, y: 0, z: -18 },
+    { x: 9.5, y: 0, z: -27.5 },
+    { x: -2.75, y: 0, z: -19.25 },
+    { x: -19, y: 0, z: -23 },
+    { x: -35, y: 0, z: -14 }
+];
+
+const moles = [];
+for (const position of molePositions) {
+    const mole = new Mole(scene, { path: './3d/mole2.fbx', position });
+    await mole.load();
+    moles.push(mole);
+    intersectGroup.add(mole);
+}
+
+//intersectGroup.add(moles);
 
 scene.add(intersectGroup);
+
+
 
 // 🔥 Start the renderer animation loop
 renderer.setAnimationLoop(animate);

@@ -13,6 +13,12 @@
     "three": "^0.171.0"
   },
   "devDependencies": {
+    "esbuild": "^0.24.0",
     "vite": "^6.0.4"
+  },
+  "vite": {
+    "build": {
+      "target": "esnext"
+    }
   }
 }
