@@ -3,12 +3,12 @@
     z-index: 0;
     width: 100%;
     min-width: 480px;
-    max-width: 1920px;
+    max-width: 1200px;
     aspect-ratio: 16/9;
     overflow: hidden;
 
     margin: 2em auto;
-    background-color: #FFF;
+    background-color: #101010;
     border: 1px solid #333;
 
     canvas {
@@ -50,6 +50,18 @@
             background: radial-gradient(circle, rgba(131, 58, 180, 1) 0%, rgba(253, 29, 29, 1) 50%, rgba(252, 176, 69, 1) 100%);
             width: 3em;
         }
+    }
+
+    #GameUI {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 1.2em;
+        position: absolute;
+        top: 0;
+        right: 0;
+        z-index: 4;
+
+        padding: 1em;
+        text-align: right;
     }
 }
 

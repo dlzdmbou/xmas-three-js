@@ -29,7 +29,7 @@ const sceneSetup = new SceneManager(rendererContainer);
 const renderer = sceneSetup.renderer;
 const scene = sceneSetup.scene;
 const camera = sceneSetup.camera;
-const controls = sceneSetup.controls;
+//const controls = sceneSetup.controls;
 
 // 🔥 Start the renderer animation loop
 renderer.setAnimationLoop(() => sceneSetup.animate());
@@ -47,7 +47,9 @@ const mouse = new THREE.Vector2();
 // Create a Raycaster to shoot lazers through space, and maybe hit things
 const raycaster = new THREE.Raycaster();
 
-// Create a rayLineHelper to visualize the raycaster line
+// Create a sloppy debug view for the raycaster
+// sloppy debug toggle global and a rayLineHelper to visualize the raycaster line
+let debugView = false;
 let rayLineHelper;
 
 //@TODO w.i.p input refactoring
@@ -68,16 +70,22 @@ await modelLoader.loadModel({
 // Create mole objects for intersectGroup 
 // Model reference: left to righ 2 rows [1,2,3,4] [5,6,7,8,9]
 const molePositions = [
-    { x: 28, y: 0, z: 1.5 },
-    { x: 13, y: 0, z: -9 },
-    { x: -1, y: 0, z: -6 },
-    { x: -23, y: 0, z: 3 },
-    { x: 23, y: 0, z: -18 },
-    { x: 9.5, y: 0, z: -27.5 },
-    { x: -2.75, y: 0, z: -19.25 },
-    { x: -19, y: 0, z: -23 },
+    { x: 28, y: -15, z: 1.5 },
+    { x: 13, y: -15, z: -9 },
+    { x: -1, y: -15, z: -6 },
+    { x: -23, y: -15, z: 3 },
+    { x: 23, y: -15, z: -18 },
+    { x: 9.5, y: -15, z: -27.5 },
+    { x: -2.75, y: -15, z: -19.25 },
+    { x: -19, y: -15, z: -23 },
     { x: -35, y: 0, z: -14 }
 ];
+
+// for (let i = 0; i < molePositions.length; i ++) {
+//     const mole = new Mole(scene, { path: './3d/mole.fbx', molePositions[i] });
+//     await mole.load();
+//     intersectGroup.add(mole);
+// }
 
 for (const position of molePositions) {
     const mole = new Mole(scene, { path: './3d/mole.fbx', position });
@@ -119,19 +127,28 @@ function checkIntersection() {
     const intersects = raycaster.intersectObjects(scene.children);
 
     // Create the raycaster helper line for debug visualization
-    if (!rayLineHelper) {
+    if (!rayLineHelper && debugView === true) {
         createRayLine();
     }
 
     if (intersects.length > 0) {
         if ( groupContains(intersectGroup, intersects[0].object) ) {
-            console.log(`Intersect object found:`, intersects[0].object);
+            console.log(`Mole object found:`, intersects[0].object);
             handleObjectClick(intersects[0].object);
+            sceneSetup.createExplosion(intersects[0].point, new THREE.Color(0xFFFF00));
+        } else {
+            sceneSetup.createExplosion(intersects[0].point, new THREE.Color(0xFF0000));
         }
-        updateRayLine(raycaster.ray, intersects[0].point);
+        if (debugView === true) {
+            updateRayLine(raycaster.ray, intersects[0].point);
+        }        
     } else {
-        console.log('No intersect objects found');
-        updateRayLine(raycaster.ray);
+        const missPoint = raycaster.ray.origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(200));
+        sceneSetup.createExplosion(missPoint, new THREE.Color(0x0099FF))
+
+        if (debugView === true) {
+            updateRayLine(raycaster.ray);
+        }
     }
 }
 

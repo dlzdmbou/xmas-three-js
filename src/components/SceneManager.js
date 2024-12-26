@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import Stats from '/node_modules/three/examples/jsm/libs/stats.module.js';
 import { OrbitControls } from '/node_modules/three/examples/jsm/controls/OrbitControls.js';
-import ParticleSnow from '/src/ParticleSystems/particleSnow.js'
+import ParticleSnow from '/src/ParticleSystems/ParticleSnow.js'
+import ParticleExplosion from '../ParticleSystems/ParticleExplosion';
 
 class SceneManager {
     constructor(rendererContainer) {
@@ -16,6 +17,7 @@ class SceneManager {
         this.pointLightFront = null;
         this.stats = null;
         this.snowSystem = null;
+        this.explosions = [];
         this.initialize();
     }
 
@@ -107,14 +109,24 @@ class SceneManager {
 
     setupSnowSystem() {
         this.snowSystem = new ParticleSnow(this.scene, {
-            cubeSize: 250,
-            particleCount: 1000,
-            particleSize: 2,
-            swayAmplitude: 1,
-            fallSpeed: 5,
-            fadeSpeed: 0.01,
+            cubeSize: 230,
+            particleCount: 750,
+            particleSize: 2.5,
+            swayAmplitude: 3,
+            fallSpeed: 10,
+            fadeSpeed: 3,
             color: 0xffffff,
         });
+    }
+
+    createExplosion(location, color) {
+        const explosion = new ParticleExplosion(this.scene, location, color, {
+            particleCount: 150,
+            particleSize: 2,
+            explosionSpeed: 35.0,
+            lifetime: .69
+        });
+        this.explosions.push(explosion);
     }
 
     animate() {
@@ -124,12 +136,17 @@ class SceneManager {
         // Would you look at the time...
         // We'll use this for smooth updates on stuff later
         const deltaTime = this.clock.getDelta();
-        this.snowSystem.update(deltaTime);
-
     
         // Update all the things, sometimes with time
         this.controls.update();
         this.camera.updateMatrixWorld();
+
+        this.snowSystem.update(deltaTime);
+
+        this.explosions = this.explosions.filter(explosion => {
+            explosion.update(deltaTime);
+            return explosion.active;
+        });
     
         // Render the frame
         this.renderer.render(this.scene, this.camera);
