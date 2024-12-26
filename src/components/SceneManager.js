@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import Stats from '/node_modules/three/examples/jsm/libs/stats.module.js';
 import { OrbitControls } from '/node_modules/three/examples/jsm/controls/OrbitControls.js';
+import ParticleSnow from '/src/ParticleSystems/particleSnow.js'
 
 class SceneManager {
     constructor(rendererContainer) {
@@ -14,6 +15,7 @@ class SceneManager {
         this.pointLightBack = null;
         this.pointLightFront = null;
         this.stats = null;
+        this.snowSystem = null;
         this.initialize();
     }
 
@@ -23,6 +25,7 @@ class SceneManager {
         this.setupLights();
         this.setupControls();
         this.setupStats();
+        this.setupSnowSystem();
     }
 
     setupRenderer() {
@@ -102,6 +105,18 @@ class SceneManager {
         this.rendererContainer.appendChild(this.stats.dom);
     }
 
+    setupSnowSystem() {
+        this.snowSystem = new ParticleSnow(this.scene, {
+            cubeSize: 250,
+            particleCount: 1000,
+            particleSize: 2,
+            swayAmplitude: 1,
+            fallSpeed: 5,
+            fadeSpeed: 0.01,
+            color: 0xffffff,
+        });
+    }
+
     animate() {
         // Start measuring stats
         this.stats.begin();
@@ -109,6 +124,8 @@ class SceneManager {
         // Would you look at the time...
         // We'll use this for smooth updates on stuff later
         const deltaTime = this.clock.getDelta();
+        this.snowSystem.update(deltaTime);
+
     
         // Update all the things, sometimes with time
         this.controls.update();

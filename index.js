@@ -61,7 +61,7 @@ const intersectGroup = new THREE.Group();
 
 // Load the environment model (and add it into the scene)
 await modelLoader.loadModel({
-    path: './3d/environment2.fbx',
+    path: './3d/environment.fbx',
     useShadows: true
 });
 
@@ -80,7 +80,7 @@ const molePositions = [
 ];
 
 for (const position of molePositions) {
-    const mole = new Mole(scene, { path: './3d/mole2.fbx', position });
+    const mole = new Mole(scene, { path: './3d/mole.fbx', position });
     await mole.load();
     intersectGroup.add(mole);
 }
