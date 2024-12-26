@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import Stats from '/node_modules/three/examples/jsm/libs/stats.module.js';
 import { OrbitControls } from '/node_modules/three/examples/jsm/controls/OrbitControls.js';
 
 class SceneManager {
@@ -6,11 +7,13 @@ class SceneManager {
         this.rendererContainer = rendererContainer;
         this.scene = new THREE.Scene();
         this.renderer = new THREE.WebGLRenderer();
+        this.clock = new THREE.Clock();
         this.camera = null;
         this.controls = null;
         this.hemiLight = null;
         this.pointLightBack = null;
         this.pointLightFront = null;
+        this.stats = null;
         this.initialize();
     }
 
@@ -19,6 +22,7 @@ class SceneManager {
         this.setupCamera();
         this.setupLights();
         this.setupControls();
+        this.setupStats();
     }
 
     setupRenderer() {
@@ -89,6 +93,32 @@ class SceneManager {
             RIGHT: THREE.MOUSE.ROTATE
         };
         this.controls.update();
+    }
+
+    setupStats() {
+        this.stats = new Stats();
+        this.stats.dom.style = '';
+        this.stats.dom.classList.add('renderStats');
+        this.rendererContainer.appendChild(this.stats.dom);
+    }
+
+    animate() {
+        // Start measuring stats
+        this.stats.begin();
+    
+        // Would you look at the time...
+        // We'll use this for smooth updates on stuff later
+        const deltaTime = this.clock.getDelta();
+    
+        // Update all the things, sometimes with time
+        this.controls.update();
+        this.camera.updateMatrixWorld();
+    
+        // Render the frame
+        this.renderer.render(this.scene, this.camera);
+    
+        // End measuring and update stats
+        this.stats.end();
     }
 }
 

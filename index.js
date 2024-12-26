@@ -31,6 +31,9 @@ const scene = sceneSetup.scene;
 const camera = sceneSetup.camera;
 const controls = sceneSetup.controls;
 
+// 🔥 Start the renderer animation loop
+renderer.setAnimationLoop(() => sceneSetup.animate());
+
 // Handle mouse click events
 rendererContainer.addEventListener('click', onClick, false);
 
@@ -41,26 +44,18 @@ rendererResizeObserver.observe(rendererContainer);
 // Create a Vector2 to store mouse coordinates
 const mouse = new THREE.Vector2();
 
-// Use THREE.Clock for frame-rate independent updates
-const clock = new THREE.Clock();
-
 // Create a Raycaster to shoot lazers through space, and maybe hit things
 const raycaster = new THREE.Raycaster();
 
 // Create a rayLineHelper to visualize the raycaster line
 let rayLineHelper;
 
-// Performance graphs
-const stats = new Stats();
-stats.dom.style = '';
-stats.dom.classList.add('renderStats');
-rendererContainer.appendChild(stats.dom);
-
 //@TODO w.i.p input refactoring
 //const inputHandler = new InputHandler(rendererContainer, camera);
 
 // Setup 3d model loader (FBX)
 const modelLoader = new ModelLoader(scene);
+
 // Intersect group for raycast targets.
 const intersectGroup = new THREE.Group();
 
@@ -91,27 +86,6 @@ for (const position of molePositions) {
 }
 
 scene.add(intersectGroup);
-
-// 🔥 Start the renderer animation loop
-renderer.setAnimationLoop(animate);
-
-function animate() {
-    // Start measuring stats
-    stats.begin();
-
-    // Would you look at the time...
-    const deltaTime = clock.getDelta();
-
-    // Update all the things, sometimes with time
-    controls.update();
-    camera.updateMatrixWorld();
-
-    // Render the frame
-    renderer.render(scene, camera);
-
-    // End measuring and update stats
-    stats.end();
-}
 
 // Adjust renderer and camera on container size change
 function onResize(entries) {
