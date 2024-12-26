@@ -1,0 +1,29 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "npm",
+			"script": "build",
+			"group": "build",
+			"problemMatcher": [],
+			"label": "npm: build",
+			"detail": "npx vite build"
+		},
+		{
+			"type": "npm",
+			"script": "dev",
+			"group": "none",
+			"problemMatcher": [],
+			"label": "npm: dev",
+			"detail": "npx vite --open"
+		},
+		{
+			"type": "npm",
+			"script": "preview",
+			"group": "none",
+			"problemMatcher": [],
+			"label": "npm: preview",
+			"detail": "npx vite preview"
+		}
+	]
+}
