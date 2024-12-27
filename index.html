@@ -13,10 +13,10 @@
 
     <!-- 🔥 this is where the three js renderer lives 🔥 -->
     <div id="App">
-        <a id="AppCode" href="/about.html" title="Source code, with festive wrappings">🎁</a>
+        <a id="AppCode" href="/about.html" title="Source code, with festive wrappings some haters might refer to as 'Spaghetti'">🎁</a>
         <div id="GameHUD">
-            <div><span id="Time">60</span> ⏱️</div>
-            <div><span id="Score">0</span> 🎇</div>            
+            <div><span id="GameTime">0</span> ⏱️</div>
+            <div><span id="GameScore">0</span> 🎇</div>            
         </div>
         <div id="GameUI" class="hidden">
             <div id="GameOver">
@@ -25,17 +25,11 @@
                 <hr/>
                 <p>Tot volgend jaar! (...Hopelijk!?!)</p>
                 <hr/>
-                <button>Restart game</button>
+                <button id="GameRestart">Restart game</button>
             </div>
         </div>
     </div>
 
-    <!-- 
-    This is the main script module.
-    🔥 Three initialization takes place there, and all other JS gets imported into 1 module
-    ⚡ vite  will make quick work of our scripts,.. har har har.
-    🎁 Vite is (ab)used as an Elf and it gets to giftwrap our code.
-    -->
     <script type="module" src="/index.js"></script>
 </body>
 

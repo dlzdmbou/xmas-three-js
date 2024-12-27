@@ -14,7 +14,7 @@ class Mole extends THREE.Object3D {
      * @param {{x: number, y: number, z: number}} options.position - The initial position of the Mole.
      * @param {number} [options.scale=0.1] - The scale to apply to the Mole model.
      */
-    constructor(scene, { path, position, scale = 0.1 }) {
+    constructor(scene, { position, scale = 0.1 }) {
         super();
 
         /**
@@ -22,12 +22,6 @@ class Mole extends THREE.Object3D {
          * The Three.js scene where the Mole is added.
          */
         this.scene = scene;
-
-        /**
-         * @type {string}
-         * The file path to the Mole FBX model.
-         */
-        this.path = path;
 
         /**
          * @type {{x: number, y: number, z: number}}
@@ -52,6 +46,12 @@ class Mole extends THREE.Object3D {
          * Dictionary of morph targets for the Mole model.
          */
         this.morphTargets = {};
+
+        /**
+         * @type {boolean}
+         * Whether the Mole is in a "Popup" state.
+         */
+        this.isPopup = false;
 
         /**
          * @type {boolean}
@@ -108,6 +108,21 @@ class Mole extends THREE.Object3D {
                 node.morphTargetInfluences[this.morphTargets['hit']] = isHit ? 1 : 0;
             }
         });
+
+        if(this.isHit) {
+            this.model.position.set(this.model.position.x, -5, this.model.position.z);
+            setTimeout(() => {
+                // use arrow functions to avoid this scope issues 
+                // since it does not have a this of its own.
+                this.setDisabled();
+            }, 200);
+        }
+    }
+
+    setDisabled() {
+        const tPos = { x : this.model.position.x, y : -16, z : this.model.position.z };
+        this.model.position.set(tPos.x, -16, tPos.z);
+        //this.model.position.lerpVectors(tPos, 1);
     }
 }
 

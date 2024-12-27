@@ -12,17 +12,45 @@
 import * as THREE from 'three';
 
 // Custom classes
-import ModelLoader from './src/utils/ModelLoader.js';
 import Mole from './src/components/Mole.js';
 import SceneManager from './src/components/SceneManager.js';
 
-// Textures
-// import imageTexture from './public/images/image.png';
+// Audio Assets
+import soundFileHit from '/audio/hitHurt.wav';
+import soundFileSizzle from '/audio/sizzle.wav';
+import soundFileBigboom from '/audio/explosion.wav';
 
+// @TODO: create audio manager
+// Setup audio files for playback.
+const soundHit = new Audio(soundFileHit);
+const soundSizzle = new Audio(soundFileSizzle);
+const soundBigboom = new Audio(soundFileBigboom);
+soundSizzle.volume = 0.12;
+soundSizzle.playbackRate = 6;
+soundHit.volume = 0.3;
+soundHit.playbackRate = 1;
+soundBigboom.volume = 0.4;
+soundBigboom.playbackRate = 4;
+
+// @TODO: create DOM manager
 // 🔥 Bind the DOM element for renderer
 const rendererContainer = document.getElementById("App");
+// Bind some more DOM elements
+const restartButton = document.getElementById("GameRestart");
+const gameUI = document.getElementById("GameUI");
+const gameHudScore = document.getElementById("GameScore");
+const gameHudTime = document.getElementById("GameTime");
+restartButton.addEventListener('click', onClickRestart, false);
 
-// Pulling in required three elements from scene my wrapper class.
+// @TODO create game manager to track this. 
+// Some global game stats
+let gameActive = false;
+let gameTime;
+let gameSpeed;
+let gameScore;
+
+// Pulling in required three elements from scene my 'wrapper class' to hide the spaghet.
+// Should actually move stuff from index.js to the sceneManager and clean that up / document it...
 const sceneSetup = new SceneManager(rendererContainer);
 const renderer = sceneSetup.renderer;
 const scene = sceneSetup.scene;
@@ -31,7 +59,7 @@ const camera = sceneSetup.camera;
 // 🔥 Start the renderer animation loop
 renderer.setAnimationLoop(() => sceneSetup.animate());
 
-// Handle mouse click events
+// Handle mouse click events for the render container
 rendererContainer.addEventListener('click', onClick, false);
 
 // Use ResizeObserver to monitor container size changes
@@ -47,16 +75,13 @@ const raycaster = new THREE.Raycaster();
 let debugView = false;
 let rayLineHelper;
 
-// Setup 3d model loader (FBX)
-const modelLoader = new ModelLoader(scene);
-
 // Intersect group for raycast targets.
 const intersectGroup = new THREE.Group();
 
 // Create mole objects for intersectGroup 
 // Model reference: left to righ 2 rows [1,2,3,4] [5,6,7,8,9]
-// y: 0 fully extended. -16: completely hidden.
-const molePositions = [
+// y: 0 fully extended. -16: fully hidden.
+const moleInitialPositions = [
     { x: 28, y: -16, z: 1.5 },
     { x: 13, y: -16, z: -9 },
     { x: -1, y: -16, z: -6 },
@@ -68,13 +93,71 @@ const molePositions = [
     { x: -35, y: 0, z: -14 }
 ];
 
-for (const position of molePositions) {
+for (const position of moleInitialPositions) {
     const mole = new Mole(scene, { position });
     await mole.load();
     mole.setHitState(false); // Initial state
     intersectGroup.add(mole); // Add the Mole instance directly
 }
 scene.add(intersectGroup);
+
+gameStart();
+
+function gameStart() {
+    gameActive = true;
+    sceneSetup.resetCamera()
+    sceneSetup.controls.autoRotate = false;    
+
+    gameTime = 30;
+    gameSpeed = 1000;
+    gameScore = 0;
+
+    // reset moles to initial positions
+    intersectGroup.children.forEach((object, index) => {
+        if (object instanceof Mole) {
+            const initPosition = moleInitialPositions[index];
+            object.model.position.set(initPosition.x, initPosition.y, initPosition.z);
+            object.setHitState(false);
+        }
+    });
+
+    gameClock();
+}
+
+function gameClock() {
+    gameTime--;
+    gameHudTime.innerHTML = gameTime;
+    if (gameTime > 0) {
+        setTimeout(function () {
+            gameClock();
+        }, 1000);
+    } else {
+        gameEnd();
+    }
+}
+
+function gameLoop() {
+    // this should be tied to the render loop, but i'm trying to rush this out
+    const randomInt = getRandomIntInclusive(0,8);
+
+    setTimeout(function () {
+
+    }, 1000)
+}
+
+function gameEnd() {
+    gameActive = false;
+    gameHudScore.innerHTML = gameScore;
+    gameUI.classList.remove('hidden');    
+    sceneSetup.controls.autoRotate = true;
+
+    intersectGroup.children.forEach((object, index) => {
+        if (object instanceof Mole) {
+            const initPosition = moleInitialPositions[index];
+            object.model.position.set(initPosition.x, -16, initPosition.z);
+        }
+    });
+}
 
 // Adjust renderer and camera on container size change
 function onResize(entries) {
@@ -87,6 +170,12 @@ function onResize(entries) {
             camera.updateProjectionMatrix();
         }
     });
+}
+
+function onClickRestart() {
+    sceneSetup.controls.autoRotate = false;
+    gameUI.classList.add('hidden');
+    gameStart();
 }
 
 // The onClick event handler
@@ -114,17 +203,20 @@ function checkIntersection() {
 
     // Check intersections of the raycaster and handle different intersections differently.
     if (intersects.length > 0) {
-        if ( groupContains(intersectGroup, intersects[0].object) ) {
-            handleObjectClick(intersects[0].object);            
-            sceneSetup.createExplosion(intersects[0].point, new THREE.Color(0xFF0000));
+        if (groupContains(intersectGroup, intersects[0].object)) {
+            handleObjectClick(intersects[0].object);
+            sceneSetup.createHit(intersects[0].point, new THREE.Color(0xFF0000));
         } else {
-            sceneSetup.createExplosion(intersects[0].point, new THREE.Color(0xFFFF00));
+            handleWorldClick(intersects[0].point);
         }
         if (debugView === true) {
             updateRayLine(raycaster.ray, intersects[0].point);
         }
     } else {
         const missPoint = raycaster.ray.origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(200));
+        soundBigboom.pause();
+        soundBigboom.currentTime = 0;
+        soundBigboom.play()
         sceneSetup.createExplosion(missPoint, new THREE.Color(0x0099FF));
         if (debugView === true) {
             updateRayLine(raycaster.ray);
@@ -135,8 +227,19 @@ function checkIntersection() {
 function handleObjectClick(object) {
     const mole = findParentMole(object);
     if (mole) {
+        soundHit.pause();
+        soundHit.currentTime = 0;
+        soundHit.play();
         mole.setHitState(true);
+        //mole.setActiveState(false);
     }
+}
+
+function handleWorldClick(intersectPoint) {
+    soundSizzle.pause();
+    soundSizzle.currentTime = 0;
+    soundSizzle.play();
+    sceneSetup.createShot(intersectPoint, new THREE.Color(0xFFFF00));
 }
 
 function findParentMole(object) {
@@ -183,3 +286,12 @@ function updateRayLine(ray, point) {
     // Update line points
     rayLineHelper.geometry.setFromPoints([ray.origin, endPoint]);
 }
+
+function getRandomIntInclusive(min, max) {
+    const minCeiled = Math.ceil(min);
+    const maxFloored = Math.floor(max);
+    // The maximum is inclusive and the minimum is inclusive
+    return Math.floor(Math.random() * (maxFloored - minCeiled + 1) + minCeiled); 
+}
+
+

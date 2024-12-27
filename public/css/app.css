@@ -1,4 +1,5 @@
 #App {
+    cursor: crosshair;
     position: relative;
     z-index: 0;
     width: 100%;
@@ -82,11 +83,13 @@
     }
 
     #GameOver {
+        cursor: default;
         pointer-events: all;
         width: 100%;
-        max-width: 480px;
-        background-color: rgba(0, 0, 0, 0.85);
-        padding: 2em;
+        max-width: 320px;
+        background-color: rgba(0, 0, 0, 0.5);
+        border: 3px solid rgba(255,255,255,0.5);
+        padding: 1em;
         margin: 2em;
         border-radius: 1em;
         display: flex;
@@ -95,14 +98,16 @@
         align-items: center;
 
         h2 {
+            font-size: 1.2em;
             margin-bottom: 1em;
         }
 
         button {
+            font-size: 1em;
             cursor: pointer;
             margin-top: 1em;
             border: 1px solid rgba(255,255,255,0.25);
-            padding: 1em;
+            padding: 0.5em 1em;
             border-radius: 0.25em;
         }
 

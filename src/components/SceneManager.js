@@ -8,6 +8,7 @@ import ParticleExplosion from '/src/ParticleSystems/ParticleExplosion';
 /**
  * This 'class' is used to wrap most of the scene base components for the game / card.
  * I should really start cleaning up and reformatting code to be styled the same way...
+ * I regret not having cleaned up sooner, i shall now just try to 'finish' the job...
  */
 class SceneManager {
     constructor(rendererContainer) {
@@ -98,20 +99,22 @@ class SceneManager {
         this.controls.maxZoom = 10;
         this.controls.zoomSpeed = 2;
         this.controls.autoRotate = false;
-        this.controls.autoRotateSpeed = -0.3;
+        this.controls.autoRotateSpeed = -0.69;
         this.controls.rotateSpeed = 0.3;
         this.controls.mouseButtons = {
             LEFT: null,
             MIDDLE: THREE.MOUSE.PAN,
             RIGHT: THREE.MOUSE.ROTATE
         };
+        this.cameraInitialPosition = this.camera.position;
+        this.cameraInitialRotation = this.camera.rotation;
         this.controls.update();
     }
 
     setupStats() {
         this.stats = new Stats();
         this.stats.dom.style = '';
-        this.stats.dom.classList.add('renderStats');
+        this.stats.dom.classList.add('renderStats','hidden');
         this.rendererContainer.appendChild(this.stats.dom);
     }
 
@@ -137,12 +140,36 @@ class SceneManager {
         });
     }
 
+    resetCamera() {
+        this.controls.reset();
+    }
+
     createExplosion(location, color) {
         const explosion = new ParticleExplosion(this.scene, location, color, {
             particleCount: 150,
             particleSize: 2,
             explosionSpeed: 35.0,
-            lifetime: .69
+            lifetime: 1
+        });
+        this.explosions.push(explosion);
+    }
+
+    createHit(location, color) {
+        const explosion = new ParticleExplosion(this.scene, location, color, {
+            particleCount: 120,
+            particleSize: 1.8,
+            explosionSpeed: 69.0,
+            lifetime: .3
+        });
+        this.explosions.push(explosion);
+    }
+
+    createShot(location, color) {
+        const explosion = new ParticleExplosion(this.scene, location, color, {
+            particleCount: 75,
+            particleSize: 1.5,
+            explosionSpeed: 150.0,
+            lifetime: .1
         });
         this.explosions.push(explosion);
     }

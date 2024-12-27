@@ -48,8 +48,12 @@ class ModelLoader {
                     this.scene.add(object);
                     resolve(object);
                 },
-                (xhr) => console.log((xhr.loaded / xhr.total) * 100 + '% loaded'),
-                (error) => reject(error)
+                (xhr) => {
+                    //console.log((xhr.loaded / xhr.total) * 100 + '% loaded')
+                },
+                (error) => {
+                    reject(error)
+                }
             );
         });
     }
