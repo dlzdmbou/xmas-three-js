@@ -67,7 +67,7 @@ class Mole extends THREE.Object3D {
     async load() {
         const loader = new ModelLoader(this.scene);
         this.model = await loader.loadModel({
-            path: this.path,
+            path: './3d/mole.fbx',
             scale: this.initialScale,
             position: this.initialPosition,
             isAnimated: false, // using simple shape key for this 'mole game', no real animations to mix.

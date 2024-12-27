@@ -14,10 +14,19 @@
     <!-- 🔥 this is where the three js renderer lives 🔥 -->
     <div id="App">
         <a id="AppCode" href="/about.html" title="Source code, with festive wrappings">🎁</a>
-        <div id="GameUI">
+        <div id="GameHUD">
             <div><span id="Time">60</span> ⏱️</div>
-            <div><span id="Score">0</span> 🎇</div>
-            
+            <div><span id="Score">0</span> 🎇</div>            
+        </div>
+        <div id="GameUI" class="hidden">
+            <div id="GameOver">
+                <h2>Game Over</h2>
+                <p>Score: <span>0</span></p>
+                <hr/>
+                <p>Tot volgend jaar! (...Hopelijk!?!)</p>
+                <hr/>
+                <button>Restart game</button>
+            </div>
         </div>
     </div>
 

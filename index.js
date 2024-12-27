@@ -10,10 +10,8 @@
  * references are correctly picked up on by Vite, preferably before you commit your changes...
  */
 import * as THREE from 'three';
-import Stats from './node_modules/three/examples/jsm/libs/stats.module.js';
 
 // Custom classes
-import InputHandler from './src/components/InputHandler.js';
 import ModelLoader from './src/utils/ModelLoader.js';
 import Mole from './src/components/Mole.js';
 import SceneManager from './src/components/SceneManager.js';
@@ -24,12 +22,11 @@ import SceneManager from './src/components/SceneManager.js';
 // 🔥 Bind the DOM element for renderer
 const rendererContainer = document.getElementById("App");
 
-// @TODO new implementation w.i.p
+// Pulling in required three elements from scene my wrapper class.
 const sceneSetup = new SceneManager(rendererContainer);
 const renderer = sceneSetup.renderer;
 const scene = sceneSetup.scene;
 const camera = sceneSetup.camera;
-//const controls = sceneSetup.controls;
 
 // 🔥 Start the renderer animation loop
 renderer.setAnimationLoop(() => sceneSetup.animate());
@@ -46,14 +43,9 @@ const mouse = new THREE.Vector2();
 
 // Create a Raycaster to shoot lazers through space, and maybe hit things
 const raycaster = new THREE.Raycaster();
-
-// Create a sloppy debug view for the raycaster
-// sloppy debug toggle global and a rayLineHelper to visualize the raycaster line
+// A sloppy debug view toggle for the raycaster
 let debugView = false;
 let rayLineHelper;
-
-//@TODO w.i.p input refactoring
-//const inputHandler = new InputHandler(rendererContainer, camera);
 
 // Setup 3d model loader (FBX)
 const modelLoader = new ModelLoader(scene);
@@ -61,38 +53,27 @@ const modelLoader = new ModelLoader(scene);
 // Intersect group for raycast targets.
 const intersectGroup = new THREE.Group();
 
-// Load the environment model (and add it into the scene)
-await modelLoader.loadModel({
-    path: './3d/environment.fbx',
-    useShadows: true
-});
-
 // Create mole objects for intersectGroup 
 // Model reference: left to righ 2 rows [1,2,3,4] [5,6,7,8,9]
+// y: 0 fully extended. -16: completely hidden.
 const molePositions = [
-    { x: 28, y: -15, z: 1.5 },
-    { x: 13, y: -15, z: -9 },
-    { x: -1, y: -15, z: -6 },
-    { x: -23, y: -15, z: 3 },
-    { x: 23, y: -15, z: -18 },
-    { x: 9.5, y: -15, z: -27.5 },
-    { x: -2.75, y: -15, z: -19.25 },
-    { x: -19, y: -15, z: -23 },
+    { x: 28, y: -16, z: 1.5 },
+    { x: 13, y: -16, z: -9 },
+    { x: -1, y: -16, z: -6 },
+    { x: -23, y: -16, z: 3 },
+    { x: 23, y: -16, z: -18 },
+    { x: 9.5, y: -16, z: -27.5 },
+    { x: -2.75, y: -16, z: -19.25 },
+    { x: -19, y: -16, z: -23 },
     { x: -35, y: 0, z: -14 }
 ];
 
-// for (let i = 0; i < molePositions.length; i ++) {
-//     const mole = new Mole(scene, { path: './3d/mole.fbx', molePositions[i] });
-//     await mole.load();
-//     intersectGroup.add(mole);
-// }
-
 for (const position of molePositions) {
-    const mole = new Mole(scene, { path: './3d/mole.fbx', position });
+    const mole = new Mole(scene, { position });
     await mole.load();
-    intersectGroup.add(mole);
+    mole.setHitState(false); // Initial state
+    intersectGroup.add(mole); // Add the Mole instance directly
 }
-
 scene.add(intersectGroup);
 
 // Adjust renderer and camera on container size change
@@ -117,7 +98,7 @@ function onClick(event) {
     mouse.y = - (event.clientY - rect.top) / rect.height * 2 + 1;
     raycaster.setFromCamera(mouse, camera);
 
-    // Check for intersections with all objects in the scene
+    // Check for intersections of the ray with objects in the scene/group
     checkIntersection();
 }
 
@@ -131,21 +112,20 @@ function checkIntersection() {
         createRayLine();
     }
 
+    // Check intersections of the raycaster and handle different intersections differently.
     if (intersects.length > 0) {
         if ( groupContains(intersectGroup, intersects[0].object) ) {
-            console.log(`Mole object found:`, intersects[0].object);
-            handleObjectClick(intersects[0].object);
-            sceneSetup.createExplosion(intersects[0].point, new THREE.Color(0xFFFF00));
-        } else {
+            handleObjectClick(intersects[0].object);            
             sceneSetup.createExplosion(intersects[0].point, new THREE.Color(0xFF0000));
+        } else {
+            sceneSetup.createExplosion(intersects[0].point, new THREE.Color(0xFFFF00));
         }
         if (debugView === true) {
             updateRayLine(raycaster.ray, intersects[0].point);
-        }        
+        }
     } else {
         const missPoint = raycaster.ray.origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(200));
-        sceneSetup.createExplosion(missPoint, new THREE.Color(0x0099FF))
-
+        sceneSetup.createExplosion(missPoint, new THREE.Color(0x0099FF));
         if (debugView === true) {
             updateRayLine(raycaster.ray);
         }
@@ -153,16 +133,21 @@ function checkIntersection() {
 }
 
 function handleObjectClick(object) {
-    object.traverse((node) => {
-        if (node.isMesh) {
-            // Check if the morph target dictionary exists and contains the shape key "hit"
-            const hitIndex = node.morphTargetDictionary["hit"];
-            if (hitIndex !== undefined) {
-                // Set the influence of the "hit" shape key to 1 (0 none, 1 full)
-                node.morphTargetInfluences[hitIndex] = 1;
-            }
+    const mole = findParentMole(object);
+    if (mole) {
+        mole.setHitState(true);
+    }
+}
+
+function findParentMole(object) {
+    // traverse upward to find the actual mole class object, 
+    // not the 3d mesh we had our raycaster intersect with.
+    for (let current = object; current; current = current.parent) {
+        if (current instanceof Mole) {
+            return current;
         }
-    });
+    }
+    return null;
 }
 
 function groupContains(group, object) {
@@ -177,7 +162,7 @@ function groupContains(group, object) {
 
 function createRayLine() {
     // Create debug visualization
-    const material = new THREE.LineBasicMaterial({ color: 0xff0000 }); // Red color for the ray
+    const material = new THREE.LineBasicMaterial({ color: 0xff0000 });
     const geometry = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, -1)]);
 
     // Create the line and add it to the scene

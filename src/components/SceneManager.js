@@ -1,9 +1,14 @@
 import * as THREE from 'three';
 import Stats from '/node_modules/three/examples/jsm/libs/stats.module.js';
 import { OrbitControls } from '/node_modules/three/examples/jsm/controls/OrbitControls.js';
+import ModelLoader from '/src/utils/ModelLoader.js';
 import ParticleSnow from '/src/ParticleSystems/ParticleSnow.js'
-import ParticleExplosion from '../ParticleSystems/ParticleExplosion';
+import ParticleExplosion from '/src/ParticleSystems/ParticleExplosion';
 
+/**
+ * This 'class' is used to wrap most of the scene base components for the game / card.
+ * I should really start cleaning up and reformatting code to be styled the same way...
+ */
 class SceneManager {
     constructor(rendererContainer) {
         this.rendererContainer = rendererContainer;
@@ -18,6 +23,7 @@ class SceneManager {
         this.stats = null;
         this.snowSystem = null;
         this.explosions = [];
+        this.environment = null;
         this.initialize();
     }
 
@@ -28,6 +34,7 @@ class SceneManager {
         this.setupControls();
         this.setupStats();
         this.setupSnowSystem();
+        this.setupEnvironment();
     }
 
     setupRenderer() {
@@ -91,6 +98,7 @@ class SceneManager {
         this.controls.maxZoom = 10;
         this.controls.zoomSpeed = 2;
         this.controls.autoRotate = false;
+        this.controls.autoRotateSpeed = -0.3;
         this.controls.rotateSpeed = 0.3;
         this.controls.mouseButtons = {
             LEFT: null,
@@ -119,6 +127,16 @@ class SceneManager {
         });
     }
 
+    async setupEnvironment() {
+        const loader = new ModelLoader(this.scene);
+        this.environment = await loader.loadModel({
+            path: './3d/environment.fbx',
+            scale: 0.1,
+            isAnimated: false, // using simple shape key for this 'mole game', no real animations to mix.
+            useShadows: true
+        });
+    }
+
     createExplosion(location, color) {
         const explosion = new ParticleExplosion(this.scene, location, color, {
             particleCount: 150,
@@ -141,7 +159,7 @@ class SceneManager {
         this.controls.update();
         this.camera.updateMatrixWorld();
 
-        this.snowSystem.update(deltaTime);
+        this.snowSystem.update(deltaTime);        
 
         this.explosions = this.explosions.filter(explosion => {
             explosion.update(deltaTime);
