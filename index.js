@@ -16,30 +16,45 @@ import Mole from './src/components/Mole.js';
 import SceneManager from './src/components/SceneManager.js';
 
 // Audio Assets
-import soundFileHit from '/audio/hitHurt.wav';
+import soundFileSpawn from '/audio/molePopup.wav';
+import soundFileHit from '/audio/moleHurt.wav';
 import soundFileSizzle from '/audio/sizzle.wav';
 import soundFileBigboom from '/audio/explosion.wav';
 
+// Music from: https://www.silvermansound.com/free-music/festv-frlix
+// FeSTV FRLiX © 2021 by Shane Ivers is licensed under CC BY 4.0
+// Music: FeSTV FRLiX by Shane Ivers - https://www.silvermansound.com
+import musicFileBackground from '/audio/festv-frlix.mp3';
+
 // @TODO: create audio manager
 // Setup audio files for playback.
+const soundSpawn = new Audio(soundFileHit);
 const soundHit = new Audio(soundFileHit);
 const soundSizzle = new Audio(soundFileSizzle);
 const soundBigboom = new Audio(soundFileBigboom);
-soundSizzle.volume = 0.12;
-soundSizzle.playbackRate = 6;
+soundSpawn.volume = 0.05;
+soundSpawn.playbackRate = 0.5;
+soundSizzle.volume = 0.05;
+soundSizzle.playbackRate = 1;
 soundHit.volume = 0.3;
 soundHit.playbackRate = 1;
 soundBigboom.volume = 0.4;
 soundBigboom.playbackRate = 4;
 
+const musicBackground = new Audio(musicFileBackground);
+musicBackground.volume = 0.03;
+
 // @TODO: create DOM manager
 // 🔥 Bind the DOM element for renderer
 const rendererContainer = document.getElementById("App");
 // Bind some more DOM elements
+const startButton = document.getElementById("GameStart");
 const restartButton = document.getElementById("GameRestart");
 const gameUI = document.getElementById("GameUI");
-const gameHudScore = document.getElementById("GameScore");
+const gameSplash = document.getElementById("GameSplash");
+const gameHudScore = document.getElementsByClassName("GameScore");
 const gameHudTime = document.getElementById("GameTime");
+startButton.addEventListener('click', onClickStart, false);
 restartButton.addEventListener('click', onClickRestart, false);
 
 // @TODO create game manager to track this. 
@@ -90,7 +105,7 @@ const moleInitialPositions = [
     { x: 9.5, y: -16, z: -27.5 },
     { x: -2.75, y: -16, z: -19.25 },
     { x: -19, y: -16, z: -23 },
-    { x: -35, y: 0, z: -14 }
+    { x: -35, y: -16, z: -14 }
 ];
 
 for (const position of moleInitialPositions) {
@@ -101,13 +116,8 @@ for (const position of moleInitialPositions) {
 }
 scene.add(intersectGroup);
 
-gameStart();
-
 function gameStart() {
-    gameActive = true;
-    sceneSetup.resetCamera()
-    sceneSetup.controls.autoRotate = false;    
-
+    musicBackground.play();
     gameTime = 30;
     gameSpeed = 1000;
     gameScore = 0;
@@ -121,12 +131,13 @@ function gameStart() {
         }
     });
 
+    gameActive = true;
     gameClock();
+    gameLoop();
 }
 
 function gameClock() {
     gameTime--;
-    gameHudTime.innerHTML = gameTime;
     if (gameTime > 0) {
         setTimeout(function () {
             gameClock();
@@ -137,18 +148,34 @@ function gameClock() {
 }
 
 function gameLoop() {
-    // this should be tied to the render loop, but i'm trying to rush this out
-    const randomInt = getRandomIntInclusive(0,8);
+    // this should be tied to the scene render loop, but i'm trying to rush this out by now
+    if (gameActive) {
 
-    setTimeout(function () {
+        // grab a random mole and enable it if it wasn't already
+        const randomInt = getRandomIntInclusive(0, 8);
+        const randomIntActiveTime = getRandomIntInclusive(200+gameSpeed, 3000+gameSpeed);
+        if (!intersectGroup.children[randomInt].isEnabled && !intersectGroup.children[randomInt].isHit) {
+            soundSpawn.pause();
+            soundSpawn.currentTime = 0;
+            soundSpawn.play();
+            intersectGroup.children[randomInt].setEnabled(randomIntActiveTime);
+        }
 
-    }, 1000)
+        updateGameHUD();
+
+        const speedModifier = gameScore / 10;
+
+        setTimeout(() => {
+            gameLoop();
+        }, gameSpeed - speedModifier);
+    }
 }
 
 function gameEnd() {
+    updateGameHUD();
     gameActive = false;
-    gameHudScore.innerHTML = gameScore;
-    gameUI.classList.remove('hidden');    
+
+    gameUI.classList.remove('hidden', 'fade');
     sceneSetup.controls.autoRotate = true;
 
     intersectGroup.children.forEach((object, index) => {
@@ -157,6 +184,11 @@ function gameEnd() {
             object.model.position.set(initPosition.x, -16, initPosition.z);
         }
     });
+
+    setTimeout(() => {
+        restartButton.disabled = false;
+    },2000)
+    
 }
 
 // Adjust renderer and camera on container size change
@@ -172,23 +204,42 @@ function onResize(entries) {
     });
 }
 
-function onClickRestart() {
+function onClickStart() {
     sceneSetup.controls.autoRotate = false;
-    gameUI.classList.add('hidden');
-    gameStart();
+    sceneSetup.resetCamera();
+    gameSplash.classList.add('fade');
+    setTimeout(() => {
+        gameSplash.classList.add('hidden');
+        gameStart();
+    },2000);
+}
+
+function onClickRestart() {
+    restartButton.disabled = true;
+    sceneSetup.controls.autoRotate = false;
+    sceneSetup.resetCamera();
+    gameUI.classList.add('fade');
+    setTimeout(() => {
+        gameUI.classList.add('hidden');
+        gameStart();
+    },2000);
 }
 
 // The onClick event handler
 function onClick(event) {
-    // Normalize mouse coordinates to [-1, 1] range (for Raycaster)
-    // Set a ray from camera based on normalized coordinates.
-    const rect = rendererContainer.getBoundingClientRect();
-    mouse.x = (event.clientX - rect.left) / rect.width * 2 - 1;
-    mouse.y = - (event.clientY - rect.top) / rect.height * 2 + 1;
-    raycaster.setFromCamera(mouse, camera);
+    // Focus on the actual canvas element for click handling in the game space
+    if (event.target === rendererContainer.querySelector('canvas')) {
+        // Normalize mouse coordinates to [-1, 1] range (for Raycaster)
+        // Set a ray from camera based on normalized coordinates.
+        const rect = rendererContainer.getBoundingClientRect();
+        mouse.x = (event.clientX - rect.left) / rect.width * 2 - 1;
+        mouse.y = - (event.clientY - rect.top) / rect.height * 2 + 1;
+        raycaster.setFromCamera(mouse, camera);
 
-    // Check for intersections of the ray with objects in the scene/group
-    checkIntersection();
+        // Check for intersections of the ray with objects in the scene/group
+        checkIntersection();
+    }
+
 }
 
 // Function to check for intersection with objects in the scene
@@ -213,33 +264,55 @@ function checkIntersection() {
             updateRayLine(raycaster.ray, intersects[0].point);
         }
     } else {
+        if (gameActive) {
+            // style points for fireworks
+            gameScore += 10;
+        }
         const missPoint = raycaster.ray.origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(200));
-        soundBigboom.pause();
-        soundBigboom.currentTime = 0;
-        soundBigboom.play()
-        sceneSetup.createExplosion(missPoint, new THREE.Color(0x0099FF));
+        handleSkyClick(missPoint);
         if (debugView === true) {
             updateRayLine(raycaster.ray);
         }
     }
+
+    updateGameHUD();
 }
 
 function handleObjectClick(object) {
     const mole = findParentMole(object);
     if (mole) {
+        if (mole.isEnabled === true && gameActive) {
+            mole.isEnabled = false;
+            gameScore += 100;
+            gameSpeed -= 5;
+        } else if (gameActive) {
+            gameScore += 1;
+        }
         soundHit.pause();
         soundHit.currentTime = 0;
         soundHit.play();
+        soundSizzle.pause();
+        soundSizzle.currentTime = 0;
+        soundSizzle.play();
         mole.setHitState(true);
-        //mole.setActiveState(false);
     }
 }
 
 function handleWorldClick(intersectPoint) {
+    if (gameActive) {
+        gameScore += 1;
+    }
     soundSizzle.pause();
     soundSizzle.currentTime = 0;
     soundSizzle.play();
     sceneSetup.createShot(intersectPoint, new THREE.Color(0xFFFF00));
+}
+
+function handleSkyClick(targetPoint) {
+    soundBigboom.pause();
+    soundBigboom.currentTime = 0;
+    soundBigboom.play()
+    sceneSetup.createExplosion(targetPoint, new THREE.Color(0x0099FF));
 }
 
 function findParentMole(object) {
@@ -287,11 +360,19 @@ function updateRayLine(ray, point) {
     rayLineHelper.geometry.setFromPoints([ray.origin, endPoint]);
 }
 
+function updateGameHUD() {
+    gameHudTime.innerHTML = gameTime;
+
+    for (let i = 0; i < gameHudScore.length; i++) {
+        gameHudScore[i].innerHTML = gameScore;
+    }
+}
+
 function getRandomIntInclusive(min, max) {
     const minCeiled = Math.ceil(min);
     const maxFloored = Math.floor(max);
     // The maximum is inclusive and the minimum is inclusive
-    return Math.floor(Math.random() * (maxFloored - minCeiled + 1) + minCeiled); 
+    return Math.floor(Math.random() * (maxFloored - minCeiled + 1) + minCeiled);
 }
 
 

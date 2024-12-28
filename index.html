@@ -15,18 +15,21 @@
     <div id="App">
         <a id="AppCode" href="/about.html" title="Source code, with festive wrappings some haters might refer to as 'Spaghetti'">🎁</a>
         <div id="GameHUD">
-            <div><span id="GameTime">0</span> ⏱️</div>
-            <div><span id="GameScore">0</span> 🎇</div>            
+            <div><span id="GameTime">30</span> ⏱️</div>
+            <div><span id="GameScore" class="GameScore">0</span> 🎇</div>            
         </div>
         <div id="GameUI" class="hidden">
             <div id="GameOver">
                 <h2>Game Over</h2>
-                <p>Score: <span>0</span></p>
+                <p>🎇<span class="GameScore">0</span>🎇</p>
                 <hr/>
                 <p>Tot volgend jaar! (...Hopelijk!?!)</p>
                 <hr/>
-                <button id="GameRestart">Restart game</button>
+                <button id="GameRestart">Restart</button>
             </div>
+        </div>
+        <div id="GameSplash">
+            <button id="GameStart">Happy Holidays!</button>
         </div>
     </div>
 

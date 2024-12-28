@@ -49,9 +49,9 @@ class Mole extends THREE.Object3D {
 
         /**
          * @type {boolean}
-         * Whether the Mole is in a "Popup" state.
+         * Whether the Mole is in a "clickable" state.
          */
-        this.isPopup = false;
+        this.isEnabled = false;
 
         /**
          * @type {boolean}
@@ -112,17 +112,28 @@ class Mole extends THREE.Object3D {
         if(this.isHit) {
             this.model.position.set(this.model.position.x, -5, this.model.position.z);
             setTimeout(() => {
-                // use arrow functions to avoid this scope issues 
+                // use arrow functions to avoid 'this' scope issues 
                 // since it does not have a this of its own.
                 this.setDisabled();
-            }, 200);
+            }, 400);
         }
     }
 
     setDisabled() {
+        this.isHit = false;
+        this.isEnabled = false;
         const tPos = { x : this.model.position.x, y : -16, z : this.model.position.z };
-        this.model.position.set(tPos.x, -16, tPos.z);
-        //this.model.position.lerpVectors(tPos, 1);
+        this.model.position.set(tPos.x, tPos.y, tPos.z);
+    }
+
+    setEnabled(activeTime) {
+        this.isEnabled = true;
+        this.setHitState(false);
+        const tPos = { x : this.model.position.x, y : 0, z : this.model.position.z };
+        this.model.position.set(tPos.x, tPos.y, tPos.z);
+        setTimeout(() => {
+            this.setDisabled();
+        },activeTime)
     }
 }
 

@@ -41,14 +41,14 @@ class SceneManager {
     setupRenderer() {
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        this.renderer.setSize(this.rendererContainer.clientWidth, this.rendererContainer.clientHeight);
+        this.renderer.setSize(this.rendererContainer.clientWidth/2, this.rendererContainer.clientHeight/2);
         this.renderer.setPixelRatio(window.devicePixelRatio);
         this.renderer.setClearColor(0x101010);
         this.rendererContainer.appendChild(this.renderer.domElement);
     }
 
     setupCamera() {
-        const frustumSize = 500;
+        const frustumSize = 420;
         const aspect = this.rendererContainer.clientWidth / this.rendererContainer.clientHeight;
         this.camera = new THREE.OrthographicCamera(
             frustumSize * aspect / -2, 
@@ -58,7 +58,7 @@ class SceneManager {
             1, 
             1000
         );
-        this.camera.position.set(-33, 33, -66);
+        this.camera.position.set(-20, 45, -66);
     }
 
     setupLights() {
@@ -66,15 +66,15 @@ class SceneManager {
         this.hemiLight.position.set(0, 10, 0);
         this.scene.add(this.hemiLight);
 
-        this.pointLightBack = new THREE.PointLight(0x98BCFF, 120, 100, 0.85);
-        this.pointLightBack.position.set(60, 20, 60);
+        this.pointLightBack = new THREE.PointLight(0x98BCFF, 100, 100, 0.85);
+        this.pointLightBack.position.set(45, 15, 40);
         this.pointLightBack.castShadow = true;
         this.pointLightBack.shadow.mapSize.width = 1024;
         this.pointLightBack.shadow.mapSize.height = 1024;
         this.scene.add(this.pointLightBack);
 
-        this.pointLightFront = new THREE.PointLight(0xFFF4CA, 150, 100, 0.85);
-        this.pointLightFront.position.set(-50, 50, -50);
+        this.pointLightFront = new THREE.PointLight(0xFFF4CA, 180, 100, 1);
+        this.pointLightFront.position.set(-40, 50, -50);
         this.pointLightFront.castShadow = true;
         this.pointLightFront.shadow.mapSize.width = 1024;
         this.pointLightFront.shadow.mapSize.height = 1024;
@@ -89,7 +89,7 @@ class SceneManager {
 
     setupControls() {
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-        this.controls.target = new THREE.Vector3(0, 10, 0);
+        this.controls.target = new THREE.Vector3(0, 24, 0);
         this.controls.enablePan = false;
         this.controls.enableDamping = true;
         this.controls.maxPolarAngle = (Math.PI / 2) + 0.1;
@@ -98,9 +98,9 @@ class SceneManager {
         this.controls.minZoom = 4;
         this.controls.maxZoom = 10;
         this.controls.zoomSpeed = 2;
-        this.controls.autoRotate = false;
-        this.controls.autoRotateSpeed = -0.69;
-        this.controls.rotateSpeed = 0.3;
+        this.controls.autoRotate = true;
+        this.controls.autoRotateSpeed = -.69;
+        this.controls.rotateSpeed = 0.2;
         this.controls.mouseButtons = {
             LEFT: null,
             MIDDLE: THREE.MOUSE.PAN,
@@ -122,7 +122,7 @@ class SceneManager {
         this.snowSystem = new ParticleSnow(this.scene, {
             cubeSize: 230,
             particleCount: 750,
-            particleSize: 2.5,
+            particleSize: 2,
             swayAmplitude: 3,
             fallSpeed: 10,
             fadeSpeed: 3,
@@ -142,6 +142,7 @@ class SceneManager {
 
     resetCamera() {
         this.controls.reset();
+        this.controls.target = new THREE.Vector3(0, 24, 0);
     }
 
     createExplosion(location, color) {
@@ -156,9 +157,9 @@ class SceneManager {
 
     createHit(location, color) {
         const explosion = new ParticleExplosion(this.scene, location, color, {
-            particleCount: 120,
-            particleSize: 1.8,
-            explosionSpeed: 69.0,
+            particleCount: 80,
+            particleSize: 2.5,
+            explosionSpeed: 40.0,
             lifetime: .3
         });
         this.explosions.push(explosion);
