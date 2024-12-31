@@ -1,0 +1,39 @@
+:root {
+    /* this has to be set to switch between light or dark */
+    color-scheme: light dark;
+
+    /* variables for easy adjustments in color-scheme */
+    --light-bg: #FFF;
+    --light-color: #000;
+
+    --dark-bg: #000;
+    --dark-color: #FFF;
+}
+
+* {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+}
+
+html, body {
+    height: 100%;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: light-dark(var(--light-bg), var(--dark-bg));
+    color: light-dark(var(--light-color), var(--dark-color));
+}
+
+.light {
+    /* forces light color-scheme */
+    color-scheme: light;
+}
+
+.dark {
+    /* forces dark color-scheme */
+    color-scheme: dark;
+}
